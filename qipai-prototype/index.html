@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#1a0708" />
+  <title>锦鲤棋牌 · 正宗中式棋牌</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🎴%3C/text%3E%3C/svg%3E" />
+  <link rel="stylesheet" href="css/style.css" />
+  <style>
+    @keyframes dealIn { from { opacity:0; transform:translateY(-30px) scale(.8); } to { opacity:1; transform:none; } }
+    .played-cards .card { box-shadow:0 2px 8px rgba(0,0,0,.5); }
+  </style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ============ 主菜单 ============ -->
+  <section id="screen-home" class="screen active">
+    <div class="logo">
+      <div class="cn">锦鲤棋牌</div>
+      <div class="en">JINLI&nbsp;&nbsp;CHESS&nbsp;&nbsp;&amp;&nbsp;&nbsp;CARDS</div>
+    </div>
+    <div class="koi">🎴 🀄 🐟</div>
+
+    <div class="rank-card">
+      <div class="rank-badge" id="rank-badge">🏅</div>
+      <div class="rank-info">
+        <div class="name" id="rank-name">青铜</div>
+        <div class="star" id="rank-star">★☆☆☆☆</div>
+        <div class="rank-bar"><i id="rank-bar-fill" style="width:0%"></i></div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:1.5rem;font-size:1rem;color:#d9b877;">
+      <span>💰 金币 <b id="home-coins" style="color:var(--gold)">8000</b></span>
+      <span>🏆 胜率 <b id="home-winrate" style="color:var(--gold)">0%</b></span>
+    </div>
+
+    <div class="home-menu">
+      <button class="btn red big" id="btn-start">⚔️ 排位赛 · 斗地主</button>
+      <button class="btn big" id="btn-casual">🎲 快速匹配</button>
+      <button class="btn ghost" id="btn-settings">⚙️ 设置（难度 / 速度 / 音乐）</button>
+      <button class="btn ghost" id="btn-howto">📖 玩法说明</button>
+    </div>
+
+    <div class="home-foot">
+      原型版 · 斗地主已可玩，掼蛋/麻将开发中。<br>
+      © 锦鲤棋牌 原创美术与音效 · 仅供体验
+    </div>
+  </section>
+
+  <!-- ============ 匹配 ============ -->
+  <section id="screen-match" class="screen">
+    <div class="match-title" id="match-title">排位匹配中</div>
+    <div class="match-players">
+      <div class="match-seat" data-seat="0"><img src="assets/avatar_female.png" alt=""><div class="nm">等待中</div></div>
+      <div class="match-seat" data-seat="1"><img src="assets/avatar_male.png" alt=""><div class="nm">我</div></div>
+      <div class="match-seat" data-seat="2"><img src="assets/avatar_female.png" alt=""><div class="nm">等待中</div></div>
+    </div>
+    <div class="match-spinner"></div>
+    <div class="match-tip">正在为您匹配实力相当的对手…</div>
+  </section>
+
+  <!-- ============ 游戏桌 ============ -->
+  <section id="screen-game" class="screen">
+    <canvas id="tableCanvas"></canvas>
+
+    <!-- 顶部 HUD -->
+    <div class="hud-top">
+      <div class="pill">💰 <b id="hud-coins">8000</b></div>
+      <div class="pill">倍数 <b id="hud-multiplier">×1</b>　💣 <b id="hud-bomb">0</b></div>
+      <div class="pill" id="btn-ingame-menu" style="cursor:pointer">☰ 菜单</div>
+    </div>
+
+    <!-- 对手 / 自己信息 -->
+    <div class="seat-info seat-right" id="seat-right">
+      <span class="ll-badge">地主</span>
+      <img src="assets/avatar_male.png" alt="">
+      <div class="meta"><div class="nm">老王</div><div class="cnt">17 张</div></div>
+    </div>
+    <div class="seat-info seat-left" id="seat-left">
+      <span class="ll-badge">地主</span>
+      <img src="assets/avatar_female.png" alt="">
+      <div class="meta"><div class="nm">春花</div><div class="cnt">17 张</div></div>
+    </div>
+    <div class="seat-info seat-self" id="seat-self">
+      <span class="ll-badge">地主</span>
+      <img src="assets/avatar_male.png" alt="">
+      <div class="meta"><div class="nm">我</div><div class="cnt">17 张</div></div>
+    </div>
+
+    <!-- 出牌展示层 -->
+    <div class="fx-layer" id="played-layer"></div>
+    <!-- 特效层 -->
+    <div class="fx-layer" id="fx-layer"></div>
+
+    <!-- 叫地主面板 -->
+    <div class="call-panel hidden" id="call-panel">
+      <button class="btn ghost call-btn" data-v="0">不叫</button>
+      <button class="btn call-btn" data-v="1">1 分</button>
+      <button class="btn call-btn" data-v="2">2 分</button>
+      <button class="btn red call-btn" data-v="3">叫地主</button>
+    </div>
+
+    <!-- 手牌区 -->
+    <div class="hand-zone">
+      <div class="hand" id="player-hand"></div>
+    </div>
+
+    <!-- 操作栏 -->
+    <div class="action-bar hidden" id="action-bar">
+      <div class="timer-ring" id="timer-ring"></div>
+      <button class="btn ghost" id="btn-hint">💡 提示</button>
+      <button class="btn ghost" id="btn-pass">过 牌</button>
+      <button class="btn red big" id="btn-play">出 牌 <span id="play-typename" style="font-size:.85rem"></span></button>
+    </div>
+  </section>
+
+  <!-- ============ 结算 ============ -->
+  <section id="screen-result" class="screen">
+    <div class="result-title win" id="result-title">胜 利</div>
+    <div class="result-detail" id="result-detail"></div>
+    <div style="display:flex;gap:1rem;margin-top:1rem;">
+      <button class="btn ghost" id="btn-result-home">返回大厅</button>
+      <button class="btn red big" id="btn-result-again">再来一局</button>
+    </div>
+  </section>
+
+  <!-- ============ 设置弹层 ============ -->
+  <div class="modal-mask" id="settings-modal">
+    <div class="modal">
+      <h2>⚙️ 设置</h2>
+      <div class="setting-row">
+        <label>AI 难度</label>
+        <div class="seg" id="seg-difficulty">
+          <button data-v="1">新手</button><button data-v="2">普通</button>
+          <button data-v="3" class="on">高手</button><button data-v="4">大师</button>
+        </div>
+      </div>
+      <div class="setting-row">
+        <label>出牌速度</label>
+        <div class="seg" id="seg-speed">
+          <button data-v="slow">慢</button><button data-v="normal" class="on">中</button>
+          <button data-v="fast">快</button><button data-v="instant">极速</button>
+        </div>
+      </div>
+      <div class="setting-row">
+        <label>🔊 音效</label>
+        <div class="switch on" id="switch-sound"><i></i></div>
+      </div>
+      <div class="setting-row">
+        <label>🎵 背景音乐</label>
+        <div class="switch on" id="switch-music"><i></i></div>
+      </div>
+      <div style="display:flex;gap:1rem;margin-top:1.5rem;justify-content:center;">
+        <button class="btn ghost" id="btn-quit">退出本局</button>
+        <button class="btn" id="settings-close">继续游戏</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 提示 toast -->
+  <div class="toast" id="flash-toast"></div>
+
+</div>
+
+<script src="js/rules.js"></script>
+<script src="js/ai.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/game.js"></script>
+</body>
+</html>
