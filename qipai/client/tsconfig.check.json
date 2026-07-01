@@ -1,0 +1,17 @@
+{
+  "compilerOptions": {
+    "target": "ES2019",
+    "module": "ESNext",
+    "moduleResolution": "node",
+    "strict": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "noUnusedLocals": false,
+    "esModuleInterop": true
+  },
+  "include": [
+    "assets/scripts/core/CardTypes.ts",
+    "assets/scripts/core/DoudizhuRules.ts",
+    "assets/scripts/ai/CardAIController.ts"
+  ]
+}

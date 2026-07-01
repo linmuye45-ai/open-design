@@ -1,0 +1,25 @@
+# ---- Node / TypeScript ----
+node_modules/
+dist/
+*.tsbuildinfo
+
+# ---- Go ----
+# built binaries
+/server/bin/
+*.exe
+*.test
+*.out
+
+# ---- Cocos Creator ----
+library/
+temp/
+build/
+local/
+profiles/
+
+# ---- OS / editor ----
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.log
