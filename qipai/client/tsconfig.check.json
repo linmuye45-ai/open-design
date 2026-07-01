@@ -12,6 +12,7 @@
   "include": [
     "assets/scripts/core/CardTypes.ts",
     "assets/scripts/core/DoudizhuRules.ts",
+    "assets/scripts/core/RankSystem.ts",
     "assets/scripts/ai/CardAIController.ts"
   ]
 }
