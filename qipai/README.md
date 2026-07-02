@@ -8,6 +8,20 @@
 
 ---
 
+## 🎮 在线体验（可玩原型）
+
+- **永久地址（GitHub Pages）**：`https://linmuye45-ai.github.io/open-design/`
+  （首次需仓库 Owner 在 GitHub → Settings → Pages 选择 `gh-pages` 分支启用，之后永久生效）
+- **原型源码**：[`qipai/webapp/`](./webapp)
+- 展示三大卖点：**100% 全可见大字牌** · **可调 AI（智商/速度双滑杆）** · **爵位荣衔制（布衣→棋圣）**
+
+## 📁 创业文件包（Founder's Kit）
+
+见 [`qipai/docs/`](./docs)：商业计划书 / 融资路演 BP / 财务模型 / 技术白皮书 / 路线图 / 合规风控。
+索引见 [`docs/README.md`](./docs/README.md)。
+
+---
+
 ## 目录结构
 
 ```
