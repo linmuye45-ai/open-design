@@ -16,7 +16,9 @@ qipai/
 │   └── assets/scripts/
 │       ├── core/
 │       │   ├── CardTypes.ts        # 共享类型：花色/点数/牌型枚举、密集编码 rank*8+suit
-│       │   └── DoudizhuRules.ts    # 斗地主规则引擎：识别/压制/走法枚举 (纯静态)
+│       │   ├── DoudizhuRules.ts    # 斗地主规则引擎：识别/压制/走法枚举 (纯静态)
+│       │   ├── GuandanRules.ts     # 掼蛋规则引擎：级牌/逢人配百搭/炸弹分级/同花顺
+│       │   └── RankSystem.ts       # 爵位荣衔制：布衣→棋圣, 段位保护/连胜/强弱调整
 │       ├── card/
 │       │   └── CardLayoutManager.ts # 模块A：数学矩阵手牌布局 + 射线选牌 + 抬牌动画
 │       └── ai/

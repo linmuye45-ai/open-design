@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<meta name="theme-color" content="#0b1d17" />
+<title>锦鲤棋牌 · 斗地主 (AAA 原型)</title>
+<meta name="description" content="面向 30-65 岁用户的 AAA 级中式棋牌斗地主原型：100% 全可见大字牌、可调 AI 智商与出牌速度、爵位荣衔制。" />
+<link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+<div id="app">
+  <!-- 顶部荣衔栏 -->
+  <header id="topbar">
+    <div class="brand">
+      <span class="logo">锦鲤棋牌</span>
+      <span class="sub">斗地主 · AAA 原型</span>
+    </div>
+    <div id="rankBadge" class="rank-badge" title="爵位荣衔制">
+      <div class="rank-title" id="rankTitle">布衣 · 一星</div>
+      <div class="rank-score" id="rankScore">积分 0</div>
+      <div class="rank-bar"><div class="rank-bar-fill" id="rankBarFill"></div></div>
+    </div>
+  </header>
+
+  <!-- 牌桌 -->
+  <main id="table">
+    <!-- 左右 AI -->
+    <div class="ai-seat left" id="seatLeft">
+      <div class="ai-avatar">🧑‍🌾</div>
+      <div class="ai-name">下家农民</div>
+      <div class="ai-count"><span id="leftCount">17</span> 张</div>
+      <div class="ai-role" id="leftRole"></div>
+      <div class="played" id="leftPlayed"></div>
+    </div>
+    <div class="ai-seat right" id="seatRight">
+      <div class="ai-avatar">👴</div>
+      <div class="ai-name">上家农民</div>
+      <div class="ai-count"><span id="rightCount">17</span> 张</div>
+      <div class="ai-role" id="rightRole"></div>
+      <div class="played" id="rightPlayed"></div>
+    </div>
+
+    <!-- 中央底牌 / 提示区 -->
+    <div id="centerZone">
+      <div id="bottomCards" class="bottom-cards"></div>
+      <div id="statusText" class="status-text">点击「开始新局」发牌</div>
+      <div id="myPlayed" class="my-played"></div>
+    </div>
+  </main>
+
+  <!-- 我的手牌 -->
+  <section id="handZone">
+    <div id="hand" class="hand"></div>
+    <div class="my-info">
+      <span class="my-role" id="myRole">我 (座位 0)</span>
+      <span class="my-count"><span id="myCount">17</span> 张</span>
+    </div>
+  </section>
+
+  <!-- 操作栏 -->
+  <footer id="controls">
+    <div class="btn-row">
+      <button id="btnStart" class="btn primary">开始新局</button>
+      <button id="btnBid" class="btn" disabled>叫地主</button>
+      <button id="btnPass" class="btn" disabled>不出</button>
+      <button id="btnPlay" class="btn accent" disabled>出牌</button>
+      <button id="btnHint" class="btn" disabled>提示</button>
+    </div>
+    <!-- AI 调节滑杆 -->
+    <div class="slider-row">
+      <label>AI 智商 <b id="iqVal">70</b>
+        <input type="range" id="iqSlider" min="0" max="100" value="70" />
+      </label>
+      <label>出牌速度 <b id="spdVal">800</b>ms
+        <input type="range" id="spdSlider" min="50" max="3000" step="50" value="800" />
+      </label>
+    </div>
+  </footer>
+</div>
+
+<!-- 结算弹层 -->
+<div id="resultModal" class="modal hidden">
+  <div class="modal-card">
+    <h2 id="resultTitle">胜利！</h2>
+    <div id="resultDetail" class="result-detail"></div>
+    <div id="resultRank" class="result-rank"></div>
+    <button id="btnAgain" class="btn primary">再来一局</button>
+  </div>
+</div>
+
+<script type="module" src="./game.js"></script>
+</body>
+</html>
