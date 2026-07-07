@@ -1,8 +1,8 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "jinli-qipai",
+  "name": "koi-fortune",
   "compatibility_date": "2025-01-01",
   "assets": {
-    "directory": "./qipai/webapp"
+    "directory": "./koi/dist"
   }
 }

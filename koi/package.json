@@ -1,0 +1,19 @@
+{
+  "name": "koi-fortune",
+  "version": "0.1.0",
+  "private": true,
+  "description": "锦鲤牌阵 Koi Fortune — 国风扑克构筑肉鸽（原创策略牌局，非赌博）",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview --host",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.5",
+    "vite": "^5.2.0",
+    "vitest": "^1.6.0"
+  }
+}
