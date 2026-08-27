@@ -1,0 +1,21 @@
+{
+  "name": "resonance-game",
+  "version": "1.0.0",
+  "private": true,
+  "type": "commonjs",
+  "description": "RESONANCE 共振 — a color-chain block puzzle with roguelike relic building. Zero runtime dependencies, zero build step.",
+  "scripts": {
+    "start": "python3 -m http.server 8080",
+    "test": "node test.js && node test-dom.js",
+    "test:logic": "node test.js",
+    "test:dom": "node test-dom.js",
+    "test:layout": "node layout-check.js",
+    "shots": "node shots.js"
+  },
+  "license": "Apache-2.0",
+  "comment": "游戏本体零依赖 —— 下面这些只用于测试, 部署时不需要 npm install。",
+  "devDependencies": {
+    "jsdom": "^30.0.1",
+    "playwright": "^1.49.0"
+  }
+}

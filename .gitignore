@@ -89,3 +89,7 @@ growth/**
 
 # Agent long-running task memory
 .task/
+
+# 游戏子项目的测试依赖
+games/resonance/node_modules/
+games/resonance/shots/
