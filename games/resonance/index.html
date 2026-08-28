@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover" />
+<meta name="theme-color" content="#12111f" />
+<meta name="description" content="RESONANCE 共振 — 颜色连锁方块解谜 × 肉鸽遗物构筑。无体力、无广告、无逼分享，每一局都可用种子复现。" />
+<title>RESONANCE 共振 — 会唱歌的方块</title>
+<link rel="stylesheet" href="style.css" />
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%23c084fc'/><rect x='18' y='18' width='28' height='28' rx='8' fill='%23ff5c7a'/><rect x='54' y='18' width='28' height='28' rx='8' fill='%23ffb02e'/><rect x='18' y='54' width='28' height='28' rx='8' fill='%234ade80'/><rect x='54' y='54' width='28' height='28' rx='8' fill='%2338bdf8'/></svg>" />
+</head>
+<body>
+
+<div id="app">
+
+  <!-- ===== 游戏 HUD ===== -->
+  <div id="hud" class="hidden">
+    <div class="hud-top">
+      <div class="hud-left">
+        <button id="btn-menu" class="icon-btn" data-icon="ui-menu" title="返回菜单 (Esc)" aria-label="返回菜单"></button>
+        <div class="level-badge">第 <b id="hud-level">1</b> 关</div>
+      </div>
+      <div class="hud-right">
+        <button id="btn-motion" class="icon-btn" data-icon="ui-motion" title="减少动效" aria-label="减少动效"></button>
+        <button id="btn-mute" class="icon-btn" data-icon="ui-sound" title="静音" aria-label="静音"></button>
+      </div>
+    </div>
+
+    <div class="score-row">
+      <div class="score-main">
+        <span id="hud-score">0</span>
+        <small>/ <span id="hud-target">300</span></small>
+      </div>
+      <div class="score-side">
+        <div><label>累计</label><b id="hud-total">0</b></div>
+        <div><label>最长连锁</label><b id="hud-chain">0</b></div>
+        <div><label>灵感</label><b id="hud-insp">0</b></div>
+      </div>
+    </div>
+
+    <!-- 连击条: 每 3 连兑现 1 灵感。刻意画成"三个待点亮的格子"而不是纯数字,
+         因为进度条能让玩家看见"还差一步", 数字不能。 -->
+    <div id="streak-row" class="streak-row hidden">
+      <span class="sk-label">连击</span>
+      <b id="streak-n">0</b>
+      <span id="streak-pips" class="sk-pips"></span>
+      <span id="streak-note" class="sk-note"></span>
+    </div>
+
+    <div class="progress"><div id="progress-fill"></div></div>
+
+    <!-- 计分台: 消除时把「基础分 × 倍率」的运算过程演出来。
+         这是整个游戏最重要的一块 UI —— 数字看得见, 构筑才学得会。 -->
+    <div id="scoreboard" class="scoreboard">
+      <div class="sb-chips"><span id="sb-base">0</span></div>
+      <div class="sb-x">×</div>
+      <div class="sb-mult"><span id="sb-mult">1</span></div>
+      <div id="sb-relic" class="sb-relic"></div>
+    </div>
+
+    <div id="relics" class="relics"></div>
+  </div>
+
+  <!-- ===== 棋盘 ===== -->
+  <div id="board-wrap">
+    <canvas id="board"></canvas>
+  </div>
+
+  <!-- ===== 手牌 ===== -->
+  <div id="hand-area" class="hidden-when-menu">
+    <div id="hand" class="hand"></div>
+    <div class="hand-tools">
+      <button id="btn-undo" class="tool-btn" data-icon="ui-undo"><span class="tb-label">撤销</span> <small>1</small></button>
+      <button id="btn-hint" class="tool-btn" data-icon="ui-hint"><span class="tb-label">提示</span> <small>3</small></button>
+      <div id="rotate-hint" class="rotate-hint hidden">再点一次手牌可旋转 (R)</div>
+    </div>
+    <div class="seed-line">种子 <code id="hud-seed">——</code></div>
+  </div>
+
+  <!-- ===== 菜单 ===== -->
+  <section class="screen active" data-screen="menu">
+    <div class="panel">
+      <h1 class="logo">RESONANCE<span>共振</span></h1>
+      <p class="tagline">填满一行即消除 —— 而<b>同色相邻的方块会被共振点燃</b>，引发连锁。<br/>每过一关，选一件遗物，构筑你自己的爆分流派。</p>
+
+      <div class="menu-stats">
+        <div><label>最高分</label><b id="stat-best">0</b></div>
+        <div><label>最远关卡</label><b id="stat-level">0</b></div>
+        <div><label>总局数</label><b id="stat-runs">0</b></div>
+        <!-- 通关次数: 只在真的通关过之后才出现 (见 syncMenuStats 注释) -->
+        <div id="stat-wins-wrap" class="stat-wins hidden"><label>通关</label><b id="stat-wins">0</b></div>
+      </div>
+
+      <button id="btn-start" class="big-btn primary" data-icon="ui-play"><span>开始新的一局</span><small>随机种子 · 无限模式</small></button>
+      <button id="btn-daily" class="big-btn" data-icon="ui-calendar"><span>今日挑战</span><small>全球同一种子 · 比拼真实技术</small></button>
+
+      <div class="seed-row">
+        <input id="seed-input" placeholder="输入种子复现某一局" maxlength="16" autocomplete="off" />
+        <button id="btn-seed" class="small-btn">载入</button>
+      </div>
+
+      <div class="menu-links">
+        <button id="btn-tutorial" class="link-btn" data-icon="ui-book">怎么玩</button>
+        <button id="btn-relicbook" class="link-btn" data-icon="ui-archive">遗物图鉴</button>
+      </div>
+
+      <p class="promise">无体力 · 无强制广告 · 无逼你分享 · 每局可用种子复现验证公平</p>
+    </div>
+  </section>
+
+  <!-- ===== 续玩 ===== -->
+  <section class="screen" data-screen="resume">
+    <div class="panel narrow">
+      <h2>继续上一局？</h2>
+      <p id="resume-info" class="resume-info"></p>
+      <button id="btn-resume-yes" class="big-btn primary" data-icon="ui-play"><span>继续</span></button>
+      <button id="btn-resume-no" class="big-btn"><span>放弃，回主菜单</span></button>
+    </div>
+  </section>
+
+  <!-- ===== 教学 ===== -->
+  <section class="screen" data-screen="tutorial">
+    <div class="panel">
+      <h2>三十秒学会</h2>
+      <ol class="tut">
+        <li><b>放方块</b>：从下方手牌拖到棋盘（或点选后再点棋盘）。</li>
+        <li><b>消除</b>：任意一整行或一整列填满，即被清除。</li>
+        <li><b>共振（核心）</b>：被清除的格子会点燃<b>紧邻的同色格子</b>，它们也一起消失 —— 可能再凑出新的满行，形成<b>连锁</b>。连锁越长，倍率越高，音乐也越激昂。</li>
+        <li><b>构筑</b>：分数达到目标即过关，然后<b>三选一</b>拿遗物。遗物会互相组合，例如「延音踏板」扩大共振范围 + 「共鸣箱」让每个共振格额外加分 = 一次爆炸清半盘。</li>
+        <li><b>不卡你</b>：每关都有免费撤销和提示，手牌无处可放才结束。</li>
+      </ol>
+      <div class="tut-visual">
+        <div class="tv-row"><span class="tv c0">●</span><span class="tv c0">●</span><span class="tv c1">▲</span><span class="tv c0">●</span><span class="tv arrow">→ 满行消除</span></div>
+        <div class="tv-row"><span class="tv c0 dim">●</span><span class="tv c0 dim">●</span><span class="tv c2">■</span><span class="tv c0 dim">●</span><span class="tv arrow">→ 同色 ● 被共振带走</span></div>
+      </div>
+      <button id="btn-tut-done" class="big-btn primary"><span>明白了，开始玩</span></button>
+    </div>
+  </section>
+
+  <!-- ===== 遗物图鉴 ===== -->
+  <section class="screen" data-screen="book">
+    <div class="panel wide">
+      <h2>遗物图鉴</h2>
+      <p class="book-note">全部遗物均为<b>纯增益</b>，效果完整写在卡面，没有隐藏乘区。</p>
+      <div id="book-list" class="book-list"></div>
+      <button id="btn-book-close" class="big-btn"><span>返回</span></button>
+    </div>
+  </section>
+
+  <!-- ===== 遗物三选一 ===== -->
+  <section class="screen" data-screen="offer">
+    <div class="panel wide">
+      <!-- 终章横幅: 只在通关(第 18 关)那一次出现。默认隐藏。
+           不强制结束对局 —— 玩家可以收下这个结局, 也可以继续刷分。 -->
+      <div id="offer-victory" class="offer-victory hidden">
+        <b>终章</b>
+        <span>你走完了全部 <em id="victory-level">18</em> 关</span>
+      </div>
+      <!-- 通关时这行会被隐藏: 终章横幅已经把关卡数说过一遍了, 两行紧挨着
+           重复同一个数字既啰嗦, 又让 h2 在视觉层级上压过横幅 —— 而通关这
+           一刻"第 18 关"这个数字本身已经不是主角。 -->
+      <h2 id="offer-title">第 <span id="offer-level">1</span> 关通过！</h2>
+      <!-- 百分位: 数字来自本项目实测的模拟对局, 不是装饰性文案。
+           可复算脚本: node docs/benchmark.js percentile -->
+      <div id="offer-pct" class="offer-pct hidden">
+        <b id="offer-pct-n">—</b>
+        <span>的对局走不到这里<em>基于 520 局实测分布 · 可复算</em></span>
+      </div>
+      <p class="offer-sub">累计 <b id="offer-score">0</b> 分 · 选一件遗物带入下一关</p>
+      <div id="offer-list" class="offer-list"></div>
+      <div class="offer-actions">
+        <button id="btn-reroll" class="small-btn" data-icon="ui-dice">刷新选项 <small>0 灵感</small></button>
+        <button id="btn-skip-relic" class="small-btn ghost">跳过（+4 灵感）</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 结算 ===== -->
+  <section class="screen" data-screen="over">
+    <div class="panel">
+      <h2 id="over-title">演出结束</h2>
+      <!-- 通关标记: 这一局走完了全部关卡。挂在结算页而不是只在过关那一瞬间
+           闪一下 —— 一个查不到记录的成就等于没发生过。 -->
+      <div id="over-victory" class="over-victory hidden">通关 · 走完全部 <b>18</b> 关</div>
+      <div class="final-score"><b id="over-score">0</b><label>总分</label></div>
+      <div class="over-grid">
+        <div><label>到达关卡</label><b id="over-level">0</b></div>
+        <div><label>最长连锁</label><b id="over-chain">0</b></div>
+        <div><label>消除行数</label><b id="over-lines">0</b></div>
+        <div><label>共振格数</label><b id="over-res">0</b></div>
+        <div><label>最高连击</label><b id="over-streak">0</b></div>
+        <div><label>调音师介入</label><b id="over-mercy">0</b></div>
+      </div>
+      <div class="over-relic-label">你的构筑</div>
+      <div id="over-relics" class="relics center"></div>
+      <div class="over-seed">种子 <code id="over-seed">——</code></div>
+      <button id="btn-again" class="big-btn primary" data-icon="ui-play"><span>再来一局</span></button>
+      <button id="btn-retry-seed" class="big-btn" data-icon="ui-replay"><span>重玩这个种子</span><small>同样的牌序，试试更好的构筑</small></button>
+      <button id="btn-share" class="big-btn" data-icon="ui-copy"><span>复制战绩</span></button>
+      <button id="btn-over-menu" class="link-btn">返回主菜单</button>
+    </div>
+  </section>
+
+  <div id="tip" class="tip"></div>
+</div>
+
+<!-- platform.js 必须最先加载: 它把存储/分享/广告收口成一层, 后面的
+     main.js 只认 Platform.*。纯 Web 下它自动退化为 localStorage 实现,
+     所以本地直接打开 index.html 依然能玩。接壳步骤见 docs/DEPLOY.md。 -->
+<script src="src/platform.js"></script>
+<script src="src/rng.js"></script>
+<script src="src/audio.js"></script>
+<script src="src/icons.js"></script>
+<script src="src/relics.js"></script>
+<script src="src/game.js"></script>
+<script src="src/render.js"></script>
+<script src="src/main.js"></script>
+</body>
+</html>

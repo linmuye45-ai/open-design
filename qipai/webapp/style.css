@@ -1,0 +1,114 @@
+/* =========================================================================
+   锦鲤棋牌 · 斗地主 AAA 原型样式
+   设计准则（面向 30-65 岁高净值用户）：
+     - 大字号、高对比、无小按钮（防老花/误触）
+     - 中式高端质感：墨绿绒布 + 描金；牌面 100% 可读
+     - 桌面/移动自适应
+   ========================================================================= */
+:root{
+  --gold:#e8c76a; --gold-2:#c9a24a;
+  --felt-1:#0f2d22; --felt-2:#0b1d17;
+  --ink:#14261f; --paper:#f7f1e0;
+  --red:#c0392b; --black:#1c1c1c;
+  --accent:#d4433a; --ok:#2e8b57;
+  --card-w:64px; --card-h:92px;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{margin:0;height:100%;}
+body{
+  font-family:"PingFang SC","Microsoft YaHei","Noto Sans SC",system-ui,sans-serif;
+  color:var(--paper);
+  background:
+    radial-gradient(circle at 50% 18%, #143a2b 0%, var(--felt-1) 42%, var(--felt-2) 100%);
+  overflow:hidden;user-select:none;
+}
+#app{display:flex;flex-direction:column;height:100dvh;max-width:1100px;margin:0 auto;position:relative;}
+
+/* ---------- 顶栏 / 荣衔 ---------- */
+#topbar{display:flex;justify-content:space-between;align-items:center;
+  padding:10px 16px;background:linear-gradient(90deg,#0a1712,#123024,#0a1712);
+  border-bottom:2px solid var(--gold-2);}
+.brand .logo{font-size:22px;font-weight:800;letter-spacing:2px;
+  background:linear-gradient(180deg,#fff3c8,var(--gold));-webkit-background-clip:text;background-clip:text;color:transparent;}
+.brand .sub{font-size:12px;color:#9fbfae;margin-left:8px;}
+.rank-badge{min-width:180px;text-align:right;}
+.rank-title{font-size:18px;font-weight:800;color:var(--gold);}
+.rank-score{font-size:12px;color:#bcd;opacity:.85;}
+.rank-bar{height:6px;background:#0006;border-radius:4px;margin-top:4px;overflow:hidden;border:1px solid #ffffff22;}
+.rank-bar-fill{height:100%;width:0%;background:linear-gradient(90deg,var(--gold-2),var(--gold));transition:width .5s;}
+
+/* ---------- 牌桌 ---------- */
+#table{flex:1;position:relative;display:flex;justify-content:space-between;padding:12px;}
+.ai-seat{width:150px;background:#00000030;border:1px solid #ffffff18;border-radius:14px;
+  padding:10px;height:fit-content;text-align:center;backdrop-filter:blur(2px);}
+.ai-avatar{font-size:38px;}
+.ai-name{font-size:15px;font-weight:700;margin-top:2px;}
+.ai-count{font-size:13px;color:#bcd;}
+.ai-count span{color:var(--gold);font-weight:800;font-size:16px;}
+.ai-role{font-size:13px;font-weight:800;margin-top:4px;min-height:18px;color:var(--accent);}
+.played{margin-top:8px;min-height:60px;display:flex;flex-wrap:wrap;gap:2px;justify-content:center;}
+
+#centerZone{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;}
+.bottom-cards{display:flex;gap:4px;min-height:calc(var(--card-h)*.5);}
+.status-text{font-size:17px;color:#e8f5ee;background:#00000040;padding:8px 18px;border-radius:20px;
+  border:1px solid var(--gold-2);text-align:center;max-width:80%;}
+.my-played{display:flex;flex-wrap:wrap;gap:3px;min-height:calc(var(--card-h)*.6);justify-content:center;}
+
+/* ---------- 扑克牌（HD 描金质感，100% 可读） ---------- */
+.card{
+  width:var(--card-w);height:var(--card-h);border-radius:8px;position:relative;flex:0 0 auto;
+  background:linear-gradient(160deg,#fffdf5,#efe6cf);
+  box-shadow:0 3px 6px #0006, inset 0 0 0 1.5px #ffffffcc, inset 0 0 0 3px #d9c68f66;
+  color:var(--black);cursor:pointer;transition:transform .12s ease, box-shadow .12s;
+  display:flex;flex-direction:column;justify-content:space-between;padding:5px 6px;
+}
+.card.red{color:var(--red);}
+.card .corner{font-size:17px;font-weight:800;line-height:1;text-align:left;}
+.card .corner small{display:block;font-size:15px;}
+.card .center{font-size:26px;text-align:center;font-weight:800;flex:1;display:flex;align-items:center;justify-content:center;}
+.card.selected{transform:translateY(-22px);box-shadow:0 8px 16px #000a, inset 0 0 0 2px var(--gold), 0 0 0 2px var(--gold);}
+.card.mini{width:34px;height:48px;padding:3px;}
+.card.mini .corner{font-size:12px;}
+.card.mini .center{font-size:15px;}
+.card.back{background:repeating-linear-gradient(45deg,#8a1c1c,#8a1c1c 6px,#6e1414 6px,#6e1414 12px);}
+
+/* ---------- 手牌区（数学矩阵布局由 JS 计算 margin） ---------- */
+#handZone{padding:6px 10px 2px;}
+.hand{display:flex;justify-content:center;align-items:flex-end;min-height:calc(var(--card-h) + 24px);
+  padding-left:var(--card-w);/* 给重叠留位 */}
+.hand .card{margin-left:calc(var(--card-w) * -0.42);}/* JS 会覆盖为精确值 */
+.my-info{display:flex;justify-content:center;gap:18px;font-size:14px;color:#cfe;margin-top:2px;}
+.my-role{font-weight:800;color:var(--gold);}
+.my-count span{color:var(--gold);font-weight:800;}
+
+/* ---------- 控制栏 ---------- */
+#controls{padding:8px 12px 14px;background:linear-gradient(0deg,#0a1712,#0a171200);}
+.btn-row{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;}
+.btn{font-size:17px;font-weight:800;padding:12px 22px;border-radius:12px;border:none;cursor:pointer;
+  background:#20302a;color:#e8f5ee;border:1.5px solid #ffffff22;min-width:96px;transition:.12s;}
+.btn:hover:not(:disabled){transform:translateY(-2px);}
+.btn:disabled{opacity:.4;cursor:not-allowed;}
+.btn.primary{background:linear-gradient(180deg,#2e8b57,#1e6b41);border-color:#4ecb8a;}
+.btn.accent{background:linear-gradient(180deg,#d4433a,#a52f28);border-color:#ff7d72;}
+.slider-row{display:flex;gap:24px;justify-content:center;margin-top:10px;flex-wrap:wrap;}
+.slider-row label{font-size:14px;color:#cfe;display:flex;align-items:center;gap:8px;}
+.slider-row b{color:var(--gold);font-size:16px;min-width:36px;display:inline-block;text-align:right;}
+.slider-row input[type=range]{width:150px;accent-color:var(--gold);}
+
+/* ---------- 结算弹层 ---------- */
+.modal{position:fixed;inset:0;background:#000a;display:flex;align-items:center;justify-content:center;z-index:50;}
+.modal.hidden{display:none;}
+.modal-card{background:linear-gradient(160deg,#153a2b,#0c2118);border:2px solid var(--gold);border-radius:18px;
+  padding:28px 36px;text-align:center;min-width:300px;box-shadow:0 12px 40px #000b;}
+.modal-card h2{font-size:32px;margin:0 0 12px;color:var(--gold);}
+.result-detail{font-size:16px;color:#dfe;line-height:1.7;}
+.result-rank{margin:14px 0;font-size:18px;font-weight:800;color:var(--gold);}
+
+/* ---------- 移动端 ---------- */
+@media(max-width:640px){
+  :root{--card-w:52px;--card-h:74px;}
+  .ai-seat{width:110px;}
+  .brand .sub{display:none;}
+  .slider-row input[type=range]{width:110px;}
+  .status-text{font-size:15px;}
+}

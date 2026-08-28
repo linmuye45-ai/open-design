@@ -1,0 +1,46 @@
+name: Koi Fortune Deploy (GitHub Pages)
+
+# 构建 koi/ 原型并发布到 GitHub Pages（gh-pages 环境）
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "koi/**"
+      - ".github/workflows/koi-pages.yml"
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "koi-pages"
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: koi
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - run: npm install
+      - run: npm run build
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: koi/dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

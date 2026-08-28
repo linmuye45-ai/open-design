@@ -1,0 +1,1094 @@
+/* =============================================================
+ * RESONANCE · style.css
+ * 移动优先。所有尺寸用 clamp()/vmin, 保证从 320px 手机到 4K 桌面
+ * 都不需要媒体查询硬切断点。
+ * ============================================================= */
+
+/* -------------------------------------------------------------
+ * 视觉身份: 模拟合成器机架 + 示波器荧光屏
+ *
+ * 刻意避开"深紫黑底 + 紫蓝粉径向光斑"这套配色 —— 它是当下生成式
+ * 界面的默认长相, 千篇一律, 一眼就廉价。这里改为一套有具体现实
+ * 指涉的材质: 磨砂石墨面板、丝印标签、示波器坐标网格、琥珀色荧光。
+ *
+ * 学 Balatro 的做法: 美术风格不是刷在最上面的一层滤镜, 而是所有
+ * 其它视觉决定的地基 —— 面板、按钮、卡面、棋盘全部服从同一套虚构,
+ * 所以读起来是"身份"而不是"贴纸"。
+ * ----------------------------------------------------------- */
+:root {
+  /* 石墨机箱: 中性偏暖, 不带紫 */
+  --bg: #14140f;
+  --bg2: #1c1c16;
+  --panel: rgba(30, 30, 25, 0.94);
+  --panel2: rgba(22, 22, 18, 0.96);
+  --line: rgba(255, 236, 190, 0.13);
+  --screw: rgba(255, 240, 205, 0.22);
+  /* 丝印文字: 微微发黄的白, 像老设备的漆 */
+  --txt: #f4ecd8;
+  --dim: #9a917c;
+  /* 荧光: 琥珀(主) + 青(次), 取自真实 CRT 磷光体 */
+  --accent: #ffb02e;
+  --accent2: #4fd6c8;
+  --gold: #ffb02e;
+  --green: #7ee787;
+  --pink: #ff6b5c;
+  /* 计分语义色 —— 全局唯一, 颜色即标签 */
+  --chips: #4fb8ff;
+  --mult: #ff5f55;
+  --r: 10px;
+}
+
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--txt);
+  font-family: ui-rounded, "SF Pro Rounded", -apple-system, BlinkMacSystemFont,
+    "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior: none;
+  touch-action: manipulation;
+}
+
+/* 机箱面板: 细密拉丝 + 中心暖光, 完全静态 —— 背景不该抢戏,
+   它的职责是当"暗色冷底", 把前景的高饱和方块和计分数字顶出来。 */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    /* 面板中心的一点暖反光 */
+    radial-gradient(120% 80% at 50% 0%, rgba(255, 190, 110, 0.07), transparent 60%),
+    /* 垂直拉丝纹理 (2px 周期) */
+    repeating-linear-gradient(90deg,
+      rgba(255, 255, 255, 0.014) 0 1px,
+      transparent 1px 3px),
+    linear-gradient(180deg, #1a1a14 0%, #121210 100%);
+  pointer-events: none;
+  z-index: 0;
+}
+/* 四角螺丝 —— 一个极小的细节, 但它把"这是一台设备"这件事钉死了 */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background-image:
+    radial-gradient(circle, var(--screw) 0 1.5px, rgba(0,0,0,.4) 1.5px 3px, transparent 3px),
+    radial-gradient(circle, var(--screw) 0 1.5px, rgba(0,0,0,.4) 1.5px 3px, transparent 3px);
+  background-position: 9px 9px, calc(100% - 9px) 9px;
+  background-repeat: no-repeat;
+}
+
+#app {
+  position: relative;
+  z-index: 1;
+  /* 用 dvh 而不是 100%: 移动端浏览器地址栏收起/展开时,
+     100vh 会溢出导致底部手牌被裁掉。dvh 跟随可视区变化。 */
+  height: 100dvh;
+  max-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: max(6px, env(safe-area-inset-top)) 10px max(6px, env(safe-area-inset-bottom));
+  max-width: 480px;
+  margin: 0 auto;
+  gap: 4px;
+}
+@supports not (height: 100dvh) {
+  #app { height: 100vh; max-height: 100vh; }
+}
+
+.hidden { display: none !important; }
+
+/* ---------- HUD ---------- */
+#hud { width: 100%; flex: 0 0 auto; }
+
+.hud-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+.hud-left, .hud-right { display: flex; align-items: center; gap: 8px; }
+
+/* 按钮 = 面板上的实体按键: 上缘高光 + 下缘暗边, 按下时高光消失并内凹。
+   这个"能被按下去"的错觉是硬件质感最便宜也最有效的一招。 */
+.icon-btn {
+  background: linear-gradient(180deg, #33332a, #24241d);
+  border: 1px solid rgba(0,0,0,.5);
+  box-shadow:
+    inset 0 1px 0 rgba(255,240,205,.16),
+    0 1px 2px rgba(0,0,0,.5);
+  color: var(--txt);
+  width: 38px; height: 38px;
+  border-radius: 8px;
+  font-size: 17px;
+  cursor: pointer;
+  display: grid; place-items: center;
+  transition: background .15s, transform .06s, box-shadow .06s;
+}
+.icon-btn:active {
+  transform: translateY(1px);
+  box-shadow: inset 0 2px 5px rgba(0,0,0,.6);
+  background: linear-gradient(180deg, #1e1e18, #26261f);
+}
+.icon-btn:hover { background: rgba(255, 255, 255, 0.15); }
+.icon-btn.off { opacity: 0.4; }
+
+.level-badge {
+  font-size: 14px; color: var(--dim);
+  background: rgba(255,255,255,.06);
+  padding: 7px 13px; border-radius: 10px;
+  border: 1px solid var(--line);
+}
+.level-badge b { color: var(--accent); font-size: 16px; }
+
+.score-row {
+  display: flex; align-items: flex-end; justify-content: space-between;
+  gap: 10px; margin-top: 10px;
+}
+.score-main {
+  font-size: clamp(30px, 9vmin, 46px);
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: -1px;
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 0 26px rgba(192, 132, 252, 0.55);
+}
+.score-main small {
+  font-size: clamp(12px, 3.4vmin, 16px);
+  color: var(--dim); font-weight: 700; margin-left: 3px;
+}
+.score-side { display: flex; gap: 12px; text-align: right; }
+.score-side div { display: flex; flex-direction: column; }
+.score-side label { font-size: 9px; color: var(--dim); text-transform: uppercase; letter-spacing: .5px; }
+.score-side b { font-size: 15px; font-variant-numeric: tabular-nums; }
+
+/* ---------- 连击条 ----------
+   三格进度而非纯数字: 玩家要能一眼看出"还差一格", 数字做不到这件事。
+   整行只在有连击时出现, 常驻一个 0 会变成持续的负反馈。 */
+.streak-row {
+  display: flex; align-items: center; gap: 7px;
+  margin-top: 7px; font-size: 11px;
+  animation: skIn .2s ease-out;
+}
+@keyframes skIn { from { opacity: 0; transform: translateY(-3px); } }
+.sk-label {
+  color: var(--dim); text-transform: uppercase;
+  letter-spacing: 1.5px; font-size: 9px;
+}
+#streak-n {
+  color: var(--accent); font-size: 14px; font-weight: 900;
+  font-variant-numeric: tabular-nums; min-width: 12px;
+}
+.sk-pips { display: inline-flex; gap: 3px; }
+.sk-pips i {
+  width: 14px; height: 5px; border-radius: 2px;
+  background: rgba(255,255,255,.13);
+  transition: background .18s, box-shadow .18s;
+}
+.sk-pips i.on {
+  background: var(--accent);
+  box-shadow: 0 0 7px rgba(255,176,46,.65);
+}
+.sk-note { color: var(--dim); font-size: 10px; margin-left: auto; }
+.sk-note.warn { color: var(--mult); }
+
+.progress {
+  width: 100%; height: 7px;
+  background: rgba(255, 255, 255, 0.09);
+  border-radius: 99px; overflow: hidden;
+  margin-top: 8px;
+}
+#progress-fill {
+  height: 100%; width: 0%;
+  background: linear-gradient(90deg, var(--accent2), var(--accent));
+  border-radius: 99px;
+  transition: width .35s cubic-bezier(.2,.9,.2,1);
+  box-shadow: 0 0 14px rgba(192,132,252,.75);
+}
+#progress-fill.near {
+  background: linear-gradient(90deg, var(--gold), var(--pink));
+  animation: pulseBar .85s ease-in-out infinite;
+}
+@keyframes pulseBar { 50% { filter: brightness(1.45); } }
+
+/* ---------- 计分台 (核心多巴胺 UI) ---------- */
+/* 借 Balatro 的「颜色即标签」: 蓝=基础分, 红=倍率。全游戏统一,
+   玩家不必读任何文字就能瞬间解析任何数字的含义。 */
+.scoreboard {
+  display: flex; align-items: center; justify-content: center;
+  gap: 7px; margin-top: 7px;
+  position: relative;
+  min-height: 40px;
+}
+.sb-chips, .sb-mult {
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+  padding: 4px 12px;
+  border-radius: 9px;
+  line-height: 1.15;
+  font-size: clamp(17px, 5.4vmin, 23px);
+  transition: transform .09s ease-out;
+  min-width: 58px; text-align: center;
+}
+.sb-chips {
+  color: #d8f1ff;
+  background: linear-gradient(180deg, rgba(0,157,255,.34), rgba(0,110,190,.5));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.28), 0 0 16px rgba(0,157,255,.32);
+}
+.sb-mult {
+  color: #ffe2de;
+  background: linear-gradient(180deg, rgba(254,95,85,.36), rgba(190,44,44,.5));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.26), 0 0 16px rgba(254,95,85,.34);
+}
+.sb-x { color: var(--dim); font-weight: 800; font-size: 15px; }
+/* 待命态: 只留描边, 不留填充。
+   早先的做法是把两颗实心药丸整体降到 42% 透明度, 但截图上看依然是两块
+   显眼的蓝/红色块里写着"—", 读起来像"读数坏了", 而不是"仪器待机"。
+   真正待机的仪表是**空的轮廓**, 通电才亮。所以这里去掉渐变填充与发光,
+   只保留一圈同色系的暗描边, 并把破折号压到很淡。
+   尺寸完全不变 —— 亮起时不会有任何位移, 这是保留占位的全部意义。 */
+.scoreboard.idle .sb-chips,
+.scoreboard.idle .sb-mult {
+  background: transparent;
+  box-shadow: none;
+  opacity: 1;
+}
+.scoreboard.idle .sb-chips {
+  border: 1px solid rgba(0, 157, 255, .22);
+  color: rgba(216, 241, 255, .3);
+}
+.scoreboard.idle .sb-mult {
+  border: 1px solid rgba(254, 95, 85, .22);
+  color: rgba(255, 226, 222, .3);
+}
+.scoreboard.idle .sb-x { opacity: .3; }
+/* 非待命态没有 border, 用等宽透明边框占位, 避免亮起瞬间宽度跳 1px */
+.sb-chips, .sb-mult { border: 1px solid transparent; }
+/* 数字被改写的瞬间弹一下 —— 让「变化」本身可见, 而不只是新值 */
+.sb-chips.bump, .sb-mult.bump { transform: scale(1.22); }
+.sb-mult.big {
+  animation: multGlow .5s ease-out;
+}
+@keyframes multGlow {
+  0% { transform: scale(1.5); filter: brightness(2); }
+  100% { transform: scale(1); filter: brightness(1); }
+}
+/* 当前触发的遗物名飘在计分台右侧 */
+.sb-relic {
+  position: absolute; left: 50%; top: -20px;
+  transform: translateX(-50%) translateY(4px);
+  font-size: 11.5px; font-weight: 800;
+  white-space: nowrap; opacity: 0;
+  transition: opacity .12s, transform .12s;
+  pointer-events: none;
+  padding: 2px 9px; border-radius: 7px;
+  background: rgba(10,9,20,.92);
+  border: 1px solid var(--line);
+}
+.sb-relic.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ---------- 遗物条 ---------- */
+/* 横向滚动而非换行: 遗物多了也不会把棋盘往下挤 */
+.relics {
+  display: flex; gap: 5px;
+  margin-top: 7px; min-height: 30px; align-items: center;
+  overflow-x: auto; overflow-y: hidden;
+  scrollbar-width: none; -ms-overflow-style: none;
+  padding-bottom: 2px;
+}
+.relics::-webkit-scrollbar { display: none; }
+.relics.center { flex-wrap: wrap; overflow: visible; justify-content: center; }
+.relic { flex: 0 0 auto; }
+.relics.center { justify-content: center; }
+.relic {
+  width: 30px; height: 30px;
+  border-radius: 9px;
+  display: grid; place-items: center;
+  font-size: 15px;
+  background: rgba(255, 255, 255, 0.09);
+  border: 1.5px solid var(--line);
+  cursor: pointer;
+  transition: transform .12s;
+}
+.relic:active { transform: scale(.88); }
+.relic:hover { transform: translateY(-2px); }
+.relic.tier1 { border-color: rgba(255,255,255,.22); }
+.relic.tier2 { border-color: var(--accent2); box-shadow: 0 0 9px rgba(56,189,248,.45); }
+.relic.tier3 { border-color: var(--gold); box-shadow: 0 0 13px rgba(255,176,46,.6); }
+.relic-empty { font-size: 11px; color: var(--dim); }
+/* SVG 图标用 currentColor, 于是在遗物条/图鉴/计分台各处自动取当地色 */
+.ricon { display: block; }
+.relic .ricon { color: var(--txt); opacity: .92; }
+.relic.tier2 .ricon { color: var(--accent2); opacity: 1; }
+.relic.tier3 .ricon { color: var(--gold); opacity: 1; }
+.tip .ricon, .sb-relic .ricon { display: inline-block; vertical-align: -2px; }
+/* 生效瞬间物理弹跳 —— 让"是哪件遗物在起作用"无需文字即可辨认 */
+.relic.fired { animation: relicFired .42s cubic-bezier(.2,1.5,.3,1); z-index: 5; }
+@keyframes relicFired {
+  0%   { transform: scale(1); }
+  28%  { transform: scale(1.55) translateY(-7px); filter: brightness(1.9); }
+  100% { transform: scale(1); filter: brightness(1); }
+}
+
+/* ---------- 棋盘 ---------- */
+/* 棋盘区: flex 收缩优先级最高, 保证手牌永远不被挤出屏幕。
+   min-height:0 是关键 —— 没有它, flex 子项不会收缩到内容尺寸以下,
+   这正是小屏上棋盘压住手牌的根因。 */
+#board-wrap {
+  flex: 1 1 auto;
+  width: 100%;
+  display: grid;
+  place-items: center;
+  min-height: 0;
+  overflow: hidden;
+}
+#board {
+  /* 尺寸由 render.js#resize() 用 inline px 独占设置(见那里的注释)。
+     这里只给首帧兜底 + 视觉样式, 不参与尺寸求解。 */
+  display: block;
+  max-width: 100%;
+  max-height: 100%;
+  aspect-ratio: 1 / 1;
+  touch-action: none;
+  cursor: pointer;
+  border-radius: 20px;
+}
+
+/* ---------- 手牌 ---------- */
+/* flex:0 0 auto + 不收缩 -> 手牌区永远保有自己的空间, 绝不与棋盘重叠 */
+#hand-area { width: 100%; flex: 0 0 auto; padding-top: 4px; }
+.hand {
+  display: flex; justify-content: center; align-items: center;
+  gap: clamp(6px, 3vw, 18px);
+  min-height: clamp(62px, 11vh, 86px);
+}
+.hand-slot {
+  position: relative;
+  padding: clamp(6px, 1.6vh, 9px);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 2px solid transparent;
+  cursor: grab;
+  display: grid; place-items: center;
+  min-width: clamp(52px, 15vw, 66px);
+  min-height: clamp(52px, 9vh, 66px);
+  transition: transform .14s, border-color .14s, background .14s;
+  touch-action: none;
+}
+.hand-slot:hover { background: rgba(255,255,255,.1); transform: translateY(-3px); }
+.hand-slot.selected {
+  border-color: var(--accent);
+  background: rgba(255, 176, 46, 0.14);
+  transform: translateY(-6px) scale(1.05);
+  box-shadow: 0 8px 24px rgba(255, 176, 46, .3);
+}
+.hand-slot.dead { opacity: .34; filter: grayscale(.7); }
+
+/* 调音师给的牌: 左上角一枚青色小标。刻意做得克制 —— 它是"如实告知",
+   不是"快看我送了你东西", 高调反而像在讨好玩家。 */
+.hand-slot.tuned::before {
+  content: '';
+  position: absolute; top: 5px; left: 5px;
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--accent2);
+  box-shadow: 0 0 7px var(--accent2);
+}
+
+.piece-grid { display: grid; gap: 3px; }
+/* --pcell 由 main.js#fitDensity() 按实测空隙下发(见那里的注释)。
+   这里的 clamp 是兜底: JS 没跑、或在不支持自定义属性的环境下, 仍是原尺寸。 */
+.pcell {
+  width: var(--pcell, clamp(9px, 3.2vmin, 15px));
+  aspect-ratio: 1;
+  border-radius: 4px;
+  font-size: 8px;
+  display: grid; place-items: center;
+  color: rgba(0,0,0,.35);
+  font-weight: 900;
+}
+.pcell.on { }
+
+.discard-btn {
+  position: absolute; top: -6px; right: -6px;
+  width: 20px; height: 20px; border-radius: 50%;
+  background: rgba(255, 92, 122, .9);
+  border: none; color: #fff; font-size: 11px;
+  cursor: pointer; display: grid; place-items: center;
+  line-height: 1;
+}
+
+.hand-tools {
+  display: flex; justify-content: center; align-items: center;
+  gap: 10px; margin-top: 6px; flex-wrap: wrap;
+}
+.tool-btn {
+  background: linear-gradient(180deg, #33332a, #24241d);
+  border: 1px solid rgba(0,0,0,.5);
+  box-shadow: inset 0 1px 0 rgba(255,240,205,.15), 0 1px 2px rgba(0,0,0,.5);
+  color: var(--txt);
+  padding: clamp(7px, 1.4vh, 9px) 15px; border-radius: 8px;
+  font-size: 13px; font-weight: 700; cursor: pointer;
+  font-family: inherit;
+  letter-spacing: .3px;
+  transition: background .15s, transform .06s, box-shadow .06s;
+}
+.tool-btn:active:not(:disabled) {
+  transform: translateY(1px);
+  box-shadow: inset 0 2px 5px rgba(0,0,0,.6);
+}
+.tool-btn:hover:not(:disabled) { background: rgba(255,255,255,.15); }
+.tool-btn:disabled { opacity: .32; cursor: default; }
+.tool-btn small {
+  background: rgba(0, 0, 0, .35);
+  padding: 1px 6px; border-radius: 6px; margin-left: 4px;
+  font-size: 11px;
+}
+.rotate-hint { font-size: 11px; color: var(--dim); }
+.seed-line {
+  text-align: center; font-size: 10px; color: var(--dim);
+  margin-top: 5px; letter-spacing: .5px;
+}
+.seed-line code, .over-seed code {
+  color: var(--accent2); background: rgba(56,189,248,.12);
+  padding: 2px 7px; border-radius: 5px; font-size: 11px;
+  letter-spacing: 1px;
+}
+
+/* ---------- 全屏面板 ---------- */
+.screen {
+  position: fixed; inset: 0;
+  background: rgba(8, 7, 16, 0.93);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  display: none;
+  align-items: center; justify-content: center;
+  padding: 16px;
+  z-index: 50;
+  overflow-y: auto;
+}
+.screen.active { display: flex; animation: fadeIn .22s ease; }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+/* 面板 = 机架上的一块模块面板: 小圆角、上缘高光、丝印描边。
+   刻意不用大圆角+毛玻璃(那是通用 AI 界面长相)。 */
+.panel {
+  width: 100%; max-width: 420px;
+  background:
+    linear-gradient(180deg, rgba(255,240,205,.05), transparent 40%),
+    var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 24px 20px;
+  box-shadow:
+    inset 0 1px 0 rgba(255,240,205,.14),
+    inset 0 0 0 1px rgba(0,0,0,.35),
+    0 24px 70px rgba(0, 0, 0, .7);
+  animation: rise .28s cubic-bezier(.2,.9,.2,1);
+  max-height: 100%;
+  overflow-y: auto;
+}
+.panel.wide { max-width: 560px; }
+.panel.narrow { max-width: 340px; text-align: center; }
+@keyframes rise { from { transform: translateY(22px) scale(.97); opacity: 0; } }
+
+/* 标题 = 设备铭牌: 琥珀荧光丝印 + 型号副标。
+   放弃"三色渐变文字"—— 那是最典型的通用 AI 排版, 且渐变会吃掉字形锐度。 */
+.logo {
+  font-size: clamp(28px, 9vmin, 40px);
+  font-weight: 900; letter-spacing: 5px;
+  margin: 0 0 4px; text-align: center; line-height: 1;
+  color: var(--accent);
+  text-shadow:
+    0 0 2px rgba(255, 176, 46, .9),
+    0 0 18px rgba(255, 176, 46, .45);
+}
+.logo span {
+  display: block; font-size: 11px; letter-spacing: 4px;
+  color: var(--dim); -webkit-text-fill-color: var(--dim);
+  margin-top: 9px; font-weight: 700;
+  text-shadow: none;
+}
+/* 铭牌下的分隔线, 带刻度感 */
+.logo::after {
+  content: '';
+  display: block;
+  width: 62px; height: 1px;
+  margin: 11px auto 0;
+  background: linear-gradient(90deg, transparent, var(--line) 20%, var(--line) 80%, transparent);
+}
+.tagline {
+  font-size: 13px; color: var(--dim); line-height: 1.65;
+  text-align: center; margin: 14px 0 18px;
+}
+.tagline b { color: var(--txt); }
+
+.panel h2 {
+  margin: 0 0 6px; font-size: 21px; text-align: center; font-weight: 800;
+}
+
+.menu-stats {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: 8px; margin-bottom: 16px;
+}
+.menu-stats div, .over-grid div {
+  background: rgba(255, 255, 255, .055);
+  border: 1px solid var(--line);
+  border-radius: 12px; padding: 10px 6px; text-align: center;
+}
+.menu-stats label, .over-grid label {
+  display: block; font-size: 9px; color: var(--dim);
+  text-transform: uppercase; letter-spacing: .6px; margin-bottom: 3px;
+}
+.menu-stats b, .over-grid b {
+  font-size: 17px; font-variant-numeric: tabular-nums;
+}
+
+/* 通关次数格。3 列网格里塞第 4 项会掉到第二行只占 1/3 宽, 看起来像
+   排版失误; 让它横跨整行反而正好读成一块铭牌 —— 而它的语义本来就是
+   铭牌而不是"又一项统计"。 */
+.menu-stats .stat-wins {
+  grid-column: 1 / -1;
+  display: flex; align-items: baseline; justify-content: center; gap: 8px;
+  background: rgba(255, 176, 46, .07);
+  border-color: rgba(255, 176, 46, .34);
+  padding: 8px 6px;
+}
+.menu-stats .stat-wins label {
+  margin-bottom: 0; color: var(--gold); letter-spacing: 2px;
+}
+.menu-stats .stat-wins b { color: var(--gold); font-size: 15px; }
+
+.big-btn {
+  display: flex; flex-direction: column; align-items: center;
+  width: 100%; padding: 13px 16px; margin-bottom: 9px;
+  background: rgba(255, 255, 255, .08);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  color: var(--txt); font-family: inherit;
+  font-size: 15px; font-weight: 800; cursor: pointer;
+  transition: transform .12s, background .16s, border-color .16s;
+}
+.big-btn:hover { background: rgba(255,240,205,.11); transform: translateY(-2px); }
+.big-btn:active {
+  transform: translateY(1px);
+  box-shadow: inset 0 2px 6px rgba(0,0,0,.55);
+}
+.big-btn small {
+  font-size: 11px; font-weight: 600; color: var(--dim);
+  margin-top: 3px; letter-spacing: .2px;
+}
+/* 主行动按钮 = 面板上那颗亮着的琥珀按键。单色实心而非彩虹渐变:
+   渐变按钮是通用 AI 界面的标志, 且会削弱"可按下"的实体感。 */
+.big-btn.primary {
+  background: linear-gradient(180deg, #ffc355, var(--accent));
+  border-color: rgba(0,0,0,.45);
+  color: #211703;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.5),
+    0 0 22px rgba(255, 176, 46, .3),
+    0 2px 4px rgba(0,0,0,.5);
+  text-shadow: 0 1px 0 rgba(255,255,255,.28);
+}
+.big-btn.primary small { color: rgba(33,23,3,.7); }
+.big-btn.primary:hover { filter: brightness(1.08); }
+
+/* -------------------------------------------------------------
+ * 带图标的按钮
+ *
+ * 界面按钮原先挂的是系统 emoji (▶ 📅 💡 …), 这是整个页面最廉价的一处:
+ * 同一个按钮在 iOS 上是立体拟物、Android 上是扁平、Windows 上是线框,
+ * 而它旁边的遗物条已经是统一的单色丝印线稿 —— 两种美术语言贴在一起。
+ * 现在全部换成 ICONS.svg() 注入的 .ricon, 于是:
+ *   - 三端渲染完全一致, 不再依赖系统字体;
+ *   - 图标颜色走 currentColor, 自动跟随按钮的启用/禁用/主次状态;
+ *   - 图标尺寸由 SVG 属性决定, 不受用户字号设置影响而错位。
+ *
+ * .big-btn 原本是 column flex (主标题在上、副标题在下), 加图标后改成
+ * 两列 grid: 左列图标纵向居中并跨两行, 右列仍是原来的标题/副标题堆叠。
+ * 没有副标题的按钮靠 grid-auto-rows 自然塌缩, 不需要额外的类。
+ * ----------------------------------------------------------- */
+.big-btn[data-icon] {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 2px 11px;
+  text-align: left;
+}
+.big-btn[data-icon] > .ricon {
+  grid-row: 1 / -1;
+  opacity: .85;
+}
+.big-btn[data-icon] > span { grid-column: 2; }
+.big-btn[data-icon] > small { grid-column: 2; margin-top: 0; }
+.big-btn.primary[data-icon] > .ricon { opacity: 1; stroke-width: 2.2; }
+
+/* 只有图标、没有文字的方形按钮 (HUD 右上角) */
+.icon-btn > .ricon { opacity: .9; }
+.icon-btn:hover > .ricon { opacity: 1; }
+
+/* 图标 + 文字并排的行内按钮 */
+.tool-btn[data-icon],
+.small-btn[data-icon],
+.link-btn[data-icon] {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+.tool-btn[data-icon] > .ricon,
+.small-btn[data-icon] > .ricon { opacity: .8; }
+/* 文字链按钮的图标要更收敛一点, 否则会喧宾夺主 */
+.link-btn[data-icon] {
+  text-decoration: none;
+  gap: 6px;
+}
+.link-btn[data-icon] > .ricon { opacity: .65; }
+.link-btn[data-icon]:hover > .ricon { opacity: 1; }
+/* 下划线只画在文字上, 不画在图标下面 */
+.link-btn[data-icon] { border-bottom: none; }
+
+.seed-row { display: flex; gap: 8px; margin: 12px 0 14px; }
+#seed-input {
+  flex: 1; background: rgba(255,255,255,.07);
+  border: 1px solid var(--line); border-radius: 11px;
+  padding: 11px 13px; color: var(--txt); font-family: inherit;
+  font-size: 13px; letter-spacing: 1.5px; text-transform: uppercase;
+  min-width: 0;
+}
+#seed-input::placeholder { color: var(--dim); letter-spacing: 0; text-transform: none; }
+#seed-input:focus { outline: none; border-color: var(--accent); }
+
+.small-btn {
+  background: rgba(255,255,255,.1); border: 1px solid var(--line);
+  border-radius: 11px; padding: 10px 15px; color: var(--txt);
+  font-family: inherit; font-size: 13px; font-weight: 700; cursor: pointer;
+  transition: background .15s, transform .1s; white-space: nowrap;
+}
+.small-btn:hover:not(:disabled) { background: rgba(255,255,255,.17); }
+.small-btn:active:not(:disabled) { transform: scale(.95); }
+.small-btn:disabled { opacity: .35; cursor: default; }
+.small-btn.ghost { background: transparent; }
+.small-btn small { color: var(--dim); font-size: 11px; margin-left: 3px; }
+
+.menu-links {
+  display: flex; justify-content: center; gap: 16px; margin-top: 6px;
+}
+.link-btn {
+  background: none; border: none; color: var(--dim);
+  font-family: inherit; font-size: 12px; cursor: pointer;
+  text-decoration: underline; text-underline-offset: 3px;
+  padding: 8px;
+}
+.link-btn:hover { color: var(--txt); }
+
+.promise {
+  font-size: 10px; color: var(--dim); text-align: center;
+  margin: 14px 0 0; line-height: 1.6; opacity: .8;
+}
+.resume-info { font-size: 13px; color: var(--dim); margin: 8px 0 18px; }
+
+/* ---------- 教学 ---------- */
+.tut { padding-left: 20px; margin: 12px 0; }
+.tut li { font-size: 13px; color: var(--dim); line-height: 1.7; margin-bottom: 9px; }
+.tut b { color: var(--txt); }
+.tut-visual {
+  background: rgba(0,0,0,.28); border-radius: 13px;
+  padding: 13px; margin: 14px 0;
+}
+.tv-row { display: flex; align-items: center; gap: 5px; margin-bottom: 7px; }
+.tv {
+  width: 24px; height: 24px; border-radius: 6px;
+  display: grid; place-items: center;
+  font-size: 11px; color: rgba(0,0,0,.4); font-weight: 900;
+}
+/* 必须与 render.js 的 COLORS 完全一致 —— 教学里的方块和棋盘上的
+   方块若不同色, 玩家会以为是两种不同的东西, 教学立刻失效。 */
+.tv.c0 { background: linear-gradient(160deg,#ff8f72,#f2503c); }
+.tv.c1 { background: linear-gradient(160deg,#ffd782,#ffab1f); }
+.tv.c2 { background: linear-gradient(160deg,#adf0a0,#5fd35f); }
+.tv.dim { opacity: .35; }
+.tv.arrow {
+  width: auto; background: none; color: var(--dim);
+  font-size: 11px; font-weight: 600; margin-left: 6px; white-space: nowrap;
+}
+
+/* ---------- 遗物三选一 ---------- */
+.offer-sub { font-size: 12px; color: var(--dim); text-align: center; margin: 0 0 16px; }
+.offer-sub b { color: var(--gold); }
+/* 三选一固定单列(手机)/三列(宽屏), 避免出现 2+1 的不对称换行 */
+.offer-list {
+  display: grid; gap: 9px;
+  grid-template-columns: 1fr;
+  margin-bottom: 14px;
+}
+@media (min-width: 560px) {
+  .offer-list { grid-template-columns: repeat(3, 1fr); }
+}
+/* 手机上用横向卡片(图标在左), 信息密度更高, 一屏放得下 3 张 */
+.offer-card {
+  background: rgba(255, 255, 255, .06);
+  border: 2px solid var(--line);
+  border-radius: 15px; padding: 13px 14px;
+  cursor: pointer;
+  color: var(--txt); font-family: inherit;
+  transition: transform .14s, background .16s, box-shadow .16s;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  /* flavor 独占一行且横跨两列: 典故是散文, 挤在图标右侧的窄栏里会碎成
+     每行三四个字。宁可多占一点高度, 也不要读不成句。 */
+  grid-template-areas: 'icon name' 'icon desc' 'flavor flavor';
+  gap: 1px 13px;
+  align-items: center;
+  text-align: left;
+}
+@media (min-width: 560px) {
+  .offer-card {
+    grid-template-columns: 1fr;
+    grid-template-areas: 'icon' 'name' 'desc' 'flavor';
+    text-align: center; padding: 16px 11px; gap: 0;
+  }
+}
+.offer-card:hover {
+  transform: translateY(-4px);
+  background: rgba(255,255,255,.12);
+}
+.offer-card:active { transform: scale(.97); }
+.offer-card.tier1 { border-color: rgba(255,255,255,.2); }
+.offer-card.tier2 { border-color: var(--accent2); box-shadow: 0 0 16px rgba(56,189,248,.28); }
+.offer-card.tier3 {
+  border-color: var(--gold);
+  box-shadow: 0 0 22px rgba(255,176,46,.35);
+  background: rgba(255,176,46,.09);
+}
+.oc-icon {
+  grid-area: icon;
+  line-height: 1;
+  display: grid; place-items: center;
+  width: 46px; height: 46px;
+  border-radius: 9px;
+  background: rgba(0,0,0,.32);
+  box-shadow: inset 0 0 0 1px var(--line);
+  color: var(--txt);
+}
+.offer-card.tier2 .oc-icon { color: var(--accent2); }
+.offer-card.tier3 .oc-icon { color: var(--gold); }
+.book-item .bi-icon { color: var(--txt); }
+.book-item.tier2 .bi-icon { color: var(--accent2); }
+.book-item.tier3 .bi-icon { color: var(--gold); }
+.oc-name {
+  grid-area: name;
+  font-size: 15px; font-weight: 800;
+  display: flex; align-items: baseline; gap: 7px;
+}
+.oc-tier {
+  font-size: 9px; color: var(--dim); text-transform: uppercase;
+  letter-spacing: 1px;
+}
+@media (min-width: 560px) {
+  .oc-icon { margin-bottom: 6px; }
+  .oc-name { display: block; margin-bottom: 2px; }
+  .oc-tier { display: block; margin-bottom: 7px; }
+}
+.offer-card.tier2 .oc-tier { color: var(--accent2); }
+.offer-card.tier3 .oc-tier { color: var(--gold); }
+.oc-desc { grid-area: desc; font-size: 11.5px; color: var(--dim); line-height: 1.5; }
+
+/* ---------- 典故 (flavor) ----------
+   真实音乐史事实, 见 relics.js 头注释。排版上刻意压到最低视觉层级:
+   斜体、更暗、上方一条细分隔线 —— 想快速决策的玩家可以完全跳过,
+   想沉浸的玩家读得到。两种人都不被打扰, 这是它能存在的前提。 */
+.oc-flavor {
+  grid-area: flavor;
+  margin-top: 8px; padding-top: 7px;
+  border-top: 1px solid var(--line);
+  font-size: 10.5px; line-height: 1.6;
+  color: #7d7565; font-style: italic;
+}
+.tip-flavor, .bi-flavor {
+  display: block; margin-top: 6px; padding-top: 5px;
+  border-top: 1px solid var(--line);
+  font-size: 10px; line-height: 1.55;
+  color: #7d7565; font-style: italic;
+}
+
+/* ---------- 通关百分位 ----------
+   数字是实测的(docs/BENCHMARK.md), 所以敢把出处直接印在旁边。
+   竞品这块常是写死的装饰, 一旦被拆穿, 信任就没了 —— 而信任是本作
+   唯一的护城河, 所以这里宁可显示一个不那么漂亮的真数字。 */
+.offer-pct {
+  display: flex; align-items: center; justify-content: center;
+  gap: 11px; margin: 2px 0 12px;
+  padding: 9px 14px;
+  background: rgba(79, 214, 200, .07);
+  border: 1px solid rgba(79, 214, 200, .28);
+  border-radius: 12px;
+}
+.offer-pct b {
+  font-size: 24px; font-weight: 900; line-height: 1;
+  color: var(--accent2);
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 0 16px rgba(79, 214, 200, .45);
+}
+.offer-pct span {
+  font-size: 11.5px; color: var(--txt); line-height: 1.35; text-align: left;
+}
+.offer-pct em {
+  display: block; font-style: normal;
+  font-size: 9px; color: var(--dim);
+  letter-spacing: .3px; margin-top: 2px;
+}
+/* ---------- 终章横幅 ----------
+   整个项目里唯一一处允许"发光扫过"的动画。理由是它一局最多出现一次,
+   而且是玩家打了 18 关才换来的 —— 稀缺性本身就是它不显得廉价的原因。
+   如果这种效果出现在每次过关上, 它立刻变成噪音 (这正是竞品结算页
+   金光四射却毫无份量的原因)。
+
+   注意它在视觉层级上压过下方的 h2「第 N 关通过」: 通关这一刻,
+   "第 18 关"这个数字本身已经不是主角了。 */
+.offer-victory {
+  position: relative;
+  overflow: hidden;
+  display: flex; flex-direction: column; align-items: center;
+  gap: 4px;
+  /* 通关时它顶替了 h2 的标题位, 所以内外留白都按标题的分量给 */
+  margin: 2px 0 16px;
+  padding: 17px 16px 15px;
+  border-radius: 14px;
+  background:
+    radial-gradient(120% 140% at 50% 0%, rgba(255, 176, 46, .17), transparent 70%),
+    rgba(255, 176, 46, .05);
+  border: 1px solid rgba(255, 176, 46, .42);
+  box-shadow:
+    0 0 0 1px rgba(255, 176, 46, .1) inset,
+    0 8px 30px rgba(255, 176, 46, .13);
+}
+.offer-victory b {
+  font-size: 26px; font-weight: 900; line-height: 1.15;
+  letter-spacing: 9px; /* 只有两个字, 拉开字距才有铭牌感, 不然像个标签 */
+  text-indent: 9px;    /* 补偿末字后面那一份字距, 否则整体偏左 */
+  color: var(--gold);
+  text-shadow: 0 0 22px rgba(255, 176, 46, .5);
+}
+.offer-victory span {
+  font-size: 12px; color: var(--txt); letter-spacing: .3px;
+}
+.offer-victory em {
+  font-style: normal; font-weight: 800;
+  color: var(--txt);
+  font-variant-numeric: tabular-nums;
+}
+/* 上下两道渐隐的金线: 把横幅"框"起来, 但不画成一个完整的框 —— 
+   开口的边界比闭合的边界更像仪表面板上的丝印 */
+.offer-victory::before {
+  content: '';
+  position: absolute; left: 12%; right: 12%; top: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--gold), transparent);
+}
+/* 一次性的高光扫过。animation 不循环 (无 infinite): 扫一遍就停,
+   之后这块区域是静止的, 不会持续抢夺"选哪张卡"的注意力。 */
+.offer-victory::after {
+  content: '';
+  position: absolute; inset: 0;
+  background: linear-gradient(
+    100deg, transparent 30%, rgba(255, 240, 205, .22) 50%, transparent 70%
+  );
+  transform: translateX(-100%);
+  animation: victorySweep 1.15s cubic-bezier(.33, 0, .2, 1) .12s 1 forwards;
+}
+@keyframes victorySweep {
+  to { transform: translateX(100%); }
+}
+
+.offer-actions { display: flex; justify-content: center; gap: 9px; flex-wrap: wrap; }
+
+/* ---------- 结算 ---------- */
+/* 新纪录标题。原先是在文案前挂一个 🏆 emoji, 现在改为纯排版表达:
+   金色 + 一圈柔光 + 字距拉开。好处是三端完全一致, 且"奖杯"这种俗套
+   符号消失后, 这一行反而更像一块被点亮的仪表铭牌, 与整体美术自洽。 */
+#over-title.is-record {
+  color: var(--gold);
+  letter-spacing: 4px;
+  text-shadow: 0 0 18px rgba(255, 176, 46, .45);
+}
+#over-title.is-record::after {
+  content: '';
+  display: block;
+  width: 46px; height: 2px;
+  margin: 7px auto 0;
+  border-radius: 2px;
+  background: linear-gradient(90deg, transparent, var(--gold), transparent);
+}
+
+/* 结算页的通关徽章。比终章横幅克制得多: 那一屏是"此刻发生了什么",
+   这一行是"这局是怎样的" —— 一条丝印标签的分量刚好, 再重就会压过总分。 */
+.over-victory {
+  margin: 9px auto 0;
+  padding: 5px 13px;
+  width: max-content; max-width: 100%;
+  border: 1px solid rgba(255, 176, 46, .42);
+  border-radius: 999px;
+  background: rgba(255, 176, 46, .08);
+  font-size: 11px; letter-spacing: 1.2px;
+  color: var(--gold);
+}
+.over-victory b { font-variant-numeric: tabular-nums; }
+
+.final-score { text-align: center; margin: 14px 0 16px; }
+.final-score b {
+  display: block; font-size: clamp(38px, 13vmin, 58px);
+  font-weight: 900; line-height: 1;
+  font-variant-numeric: tabular-nums;
+  background: linear-gradient(96deg, var(--gold), var(--pink));
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.final-score label {
+  font-size: 10px; color: var(--dim);
+  text-transform: uppercase; letter-spacing: 2px;
+}
+/* 6 项统计: 手机上 3×2 比 6×1 可读得多 (标签不会被压成竖排) */
+.over-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: 6px; margin-bottom: 14px;
+}
+@media (min-width: 560px) {
+  .over-grid { grid-template-columns: repeat(6, 1fr); }
+}
+.over-relic-label {
+  font-size: 10px; color: var(--dim); text-align: center;
+  text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 6px;
+}
+.over-seed {
+  text-align: center; font-size: 10px; color: var(--dim);
+  margin: 12px 0 16px;
+}
+
+/* ---------- 图鉴 ---------- */
+.book-note { font-size: 11.5px; color: var(--dim); text-align: center; margin: 0 0 14px; }
+.book-list { margin-bottom: 14px; }
+.book-tier {
+  font-size: 12px; text-transform: uppercase; letter-spacing: 1.2px;
+  margin: 16px 0 8px; padding-bottom: 5px;
+  border-bottom: 1px solid var(--line);
+}
+.book-tier.t1 { color: var(--dim); }
+.book-tier.t2 { color: var(--accent2); }
+.book-tier.t3 { color: var(--gold); }
+.book-grid { display: grid; gap: 7px; grid-template-columns: 1fr; }
+.book-item {
+  display: flex; gap: 10px; align-items: flex-start;
+  background: rgba(255,255,255,.05);
+  border: 1px solid var(--line);
+  border-left-width: 3px;
+  border-radius: 11px; padding: 10px 12px;
+}
+.book-item.tier1 { border-left-color: rgba(255,255,255,.25); }
+.book-item.tier2 { border-left-color: var(--accent2); }
+.book-item.tier3 { border-left-color: var(--gold); }
+.bi-icon { font-size: 20px; line-height: 1.2; flex: 0 0 auto; }
+.book-item b { font-size: 13px; display: block; margin-bottom: 2px; }
+.book-item small { font-size: 11px; color: var(--dim); line-height: 1.5; }
+
+/* ---------- 提示气泡 ---------- */
+.tip {
+  position: fixed; z-index: 200;
+  background: rgba(16, 15, 30, .97);
+  border: 1px solid var(--accent);
+  border-radius: 12px; padding: 10px 13px;
+  max-width: 220px; font-size: 12px;
+  box-shadow: 0 10px 34px rgba(0,0,0,.65);
+  opacity: 0; pointer-events: none;
+  transform: translateY(-6px);
+  transition: opacity .18s, transform .18s;
+}
+.tip.show { opacity: 1; transform: translateY(0); }
+.tip b { display: block; margin-bottom: 4px; font-size: 13px; }
+.tip span { color: var(--dim); line-height: 1.5; display: block; }
+.tip em {
+  display: block; margin-top: 5px; color: var(--gold);
+  font-style: normal; font-size: 11px;
+}
+
+/* 无锚点提示 (App.toast)。复用 .tip 节点, 只覆盖定位 ——
+   inset+margin:auto 做水平居中, 不用 translate, 因为 .tip.show 的
+   transform 已经被入场动画占用了, 两者会互相覆盖。 */
+.tip.tip-center {
+  left: 0; right: 0;
+  top: auto; bottom: calc(env(safe-area-inset-bottom, 0px) + 96px);
+  margin: 0 auto;
+  width: max-content; max-width: min(86vw, 320px);
+  text-align: center;
+  border-color: var(--accent2);
+}
+.tip.tip-center span { color: var(--txt); }
+
+/* 游戏内"减少动效"开关 (菜单里的 #btn-motion)。
+   与下方的 prefers-reduced-motion 媒体查询规则保持一致 —— 后者管系统级
+   偏好, 这里管应用内偏好, 两条通路必须给出同样的结果, 否则玩家会发现
+   "系统关掉有效、游戏里关掉无效", 那比没有开关更让人困惑。 */
+body.reduce-motion *,
+body.reduce-motion *::before,
+body.reduce-motion *::after {
+  animation: none !important;
+  transition-duration: .01ms !important;
+}
+/* 例外: .hidden 依赖 display 而非动画, 不受影响。
+   终章横幅的高光扫过是 ::after 的 animation, 上面这条会直接停掉它,
+   横幅本身(渐变、金线、文字)全部保留 —— 信息一点没少, 只是不动了。 */
+
+/* 矮屏幕 (老款手机 / 横屏): 压缩一切非必要高度, 优先保证棋盘+手牌完整 */
+@media (max-height: 700px) {
+  .score-main { font-size: 27px; }
+  .score-side b { font-size: 13px; }
+  .icon-btn { width: 34px; height: 34px; font-size: 15px; }
+  .level-badge { padding: 5px 10px; font-size: 12px; }
+  .relics { min-height: 26px; margin-top: 5px; }
+  .relic { width: 26px; height: 26px; font-size: 13px; }
+  .progress { height: 6px; margin-top: 6px; }
+}
+@media (max-height: 580px) {
+  .score-row { margin-top: 6px; }
+  .score-main { font-size: 23px; }
+  .seed-line { display: none; }
+  .relics { display: none; }
+}
+
+/* 宽屏(桌面): 加大整体尺寸并真正居中, 避免内容缩在一角显得寒酸 */
+@media (min-width: 900px) and (min-height: 700px) {
+  #app {
+    max-width: 620px;
+    padding-top: 18px;
+    padding-bottom: 18px;
+    gap: 8px;
+  }
+  .score-main { font-size: 52px; }
+  .score-side b { font-size: 17px; }
+  .score-side label { font-size: 10px; }
+  .relic { width: 34px; height: 34px; font-size: 17px; }
+  .hand { min-height: 96px; }
+  .hand-slot { min-width: 74px; min-height: 74px; }
+  .tool-btn { font-size: 14px; padding: 10px 18px; }
+
+  /* 对齐到棋盘宽度 (--board-w 由 main.js#fitDensity 下发)。
+     桌面上棋盘受高度限制只有 ~481px, 而 #app 是 620px; 不做这一步的话
+     状态栏和手牌都会比棋盘宽出一截, 左右边缘全都对不齐。
+     兜底值 100% 保证 JS 未执行时退回原来的满宽布局。 */
+  #hud, #hand-area {
+    width: var(--board-w, 100%);
+    margin-left: auto;
+    margin-right: auto;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body::before { animation: none; }
+  * { transition-duration: .01ms !important; }
+}
